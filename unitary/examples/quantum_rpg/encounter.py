@@ -1,3 +1,17 @@
+# Copyright 2023 The Unitary Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import io
 from typing import Optional, Sequence
 
@@ -5,6 +19,7 @@ import random
 
 import unitary.examples.quantum_rpg.battle as battle
 import unitary.examples.quantum_rpg.qaracter as qaracter
+import unitary.examples.quantum_rpg.xp_utils as xp_utils
 from typing import Sequence
 
 
@@ -19,10 +34,12 @@ class Encounter:
         enemies: Sequence[qaracter.Qaracter] = (),
         probability: float = 1.0,
         description: Optional[str] = None,
+        xp: Optional[xp_utils.EncounterXp] = None,
     ):
         self.enemies = enemies
         self.probability = probability
         self.description = description
+        self.xp = xp
 
     def will_trigger(self) -> bool:
         """Returns True if the encounter should be triggered.
@@ -35,5 +52,5 @@ class Encounter:
         self, players: Sequence[qaracter.Qaracter], file: Optional[io.IOBase] = None
     ) -> battle.Battle:
         if file:
-            return battle.Battle(players, self.enemies, file)
-        return battle.Battle(players, self.enemies)
+            return battle.Battle(players, self.enemies, file, xp=self.xp)
+        return battle.Battle(players, self.enemies, xp=self.xp)

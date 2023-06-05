@@ -1,9 +1,29 @@
+# Copyright 2023 The Unitary Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import io
 import unitary.examples.quantum_rpg.classes as classes
 import unitary.examples.quantum_rpg.encounter as encounter
+import unitary.examples.quantum_rpg.item as item
 import unitary.examples.quantum_rpg.main_loop as main_loop
 import unitary.examples.quantum_rpg.npcs as npcs
 import unitary.examples.quantum_rpg.world as world
+
+SIGN = item.Item(
+    keyword_actions=[("read", "sign", "This is an example world!")],
+    description="A helpful sign is here.",
+)
 
 EXAMPLE_WORLD = [
     world.Location(
@@ -16,6 +36,7 @@ EXAMPLE_WORLD = [
         label="2",
         title="Disorganized Lab",
         description="Tables are here with tons of electronics.\nThe lab continues to the south.",
+        items=[SIGN],
         exits={world.Direction.SOUTH: "3", world.Direction.WEST: "1"},
     ),
     world.Location(
@@ -63,7 +84,7 @@ def test_do_simple_move() -> None:
     output = io.StringIO()
     c = classes.Analyst("Mensing")
     loop = main_loop.MainLoop([c], world.World(EXAMPLE_WORLD), output)
-    loop.loop(user_input=["e", "w", "quit"])
+    loop.loop(user_input=["e", "read sign", "w", "quit"])
     assert (
         output.getvalue().replace("\t", " ").strip()
         == r"""
@@ -77,8 +98,10 @@ Disorganized Lab
 
 Tables are here with tons of electronics.
 The lab continues to the south.
+A helpful sign is here.
 Exits: south, west.
 
+This is an example world!
 Lab Entrance
 
 You stand before the entrance to the premier quantum lab.
@@ -108,6 +131,7 @@ Disorganized Lab
 
 Tables are here with tons of electronics.
 The lab continues to the south.
+A helpful sign is here.
 Exits: south, west.
 
 Cryostats
@@ -132,4 +156,33 @@ Giant aluminum cylinders hang suspended by large frames.
 Rhythmic whirring of a pulse tube can be heard overhead.
 Exits: north.
 """.strip()
+    )
+
+
+def test_title_screen():
+    output = io.StringIO()
+    loop = main_loop.MainLoop([], world.World(EXAMPLE_WORLD), output)
+    loop.print_title_screen()
+
+    assert (
+        output.getvalue()
+        == r"""
+______  _                _             _____  _           _
+|  ___|(_)              | |           /  ___|| |         | |
+| |_    _  _ __    __ _ | |    __     \ `--. | |_   __ _ | |_   ___
+|  _|  | || '_ \  / _` || |    ()      `--. \| __| / _` || __| / _ \
+| |    | || | | || (_| || |    )(     /\__/ /| |_ | (_| || |_ |  __/
+\_|    |_||_| |_| \__,_||_|    )(     \____/  \__| \__,_| \__| \___|
+                            o======o
+                               ||
+______                         ||              _    _
+| ___ \                        ||             | |  (_)
+| |_/ / _ __   ___  _ __    __ _| _ __   __ _ | |_  _   ___   _ __
+|  __/ | '__| / _ \| '_ \  / _` || '__| / _` || __|| | / _ \ | '_ \
+| |    | |   |  __/| |_) || (_| || |   | (_| || |_ | || (_) || | | |
+\_|    |_|    \___|| .__/  \__,_||_|    \__,_| \__||_| \___/ |_| |_|
+                   | |         ||
+                   |_|         \/
+
+"""
     )

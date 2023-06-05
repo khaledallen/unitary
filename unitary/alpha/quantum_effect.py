@@ -1,4 +1,4 @@
-# Copyright 2022 Google
+# Copyright 2023 The Unitary Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,6 +61,9 @@ class QuantumEffect(abc.ABC):
         self._verify_objects(*objects)
         world = objects[0].world
         world.add_effect(list(self.effect(*objects)))
+
+    def __str__(self):
+        return self.__class__.__name__
 
 
 class QuantumIf:

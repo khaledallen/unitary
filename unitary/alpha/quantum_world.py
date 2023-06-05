@@ -1,4 +1,4 @@
-# Copyright 2022 Google
+# Copyright 2023 The Unitary Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ class QuantumWorld:
         sampler=cirq.Simulator(),
         compile_to_qubits: bool = False,
     ):
-
         self.clear()
         self.sampler = sampler
         self.use_sparse = isinstance(sampler, SparseSimulator)
