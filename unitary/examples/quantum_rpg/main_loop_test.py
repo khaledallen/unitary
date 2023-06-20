@@ -15,21 +15,36 @@
 import io
 import unitary.examples.quantum_rpg.classes as classes
 import unitary.examples.quantum_rpg.encounter as encounter
+import unitary.examples.quantum_rpg.game_state as game_state
 import unitary.examples.quantum_rpg.item as item
 import unitary.examples.quantum_rpg.main_loop as main_loop
 import unitary.examples.quantum_rpg.npcs as npcs
 import unitary.examples.quantum_rpg.world as world
 
+_COUNTER = "counter"
+
+
+def _press_button(state: game_state.GameState) -> str:
+    counter = state.state_dict.get(_COUNTER, 0)
+    state.state_dict[_COUNTER] = counter + 1
+    return f"You've pressed the button {counter} times before!"
+
+
 SIGN = item.Item(
     keyword_actions=[("read", "sign", "This is an example world!")],
     description="A helpful sign is here.",
 )
+BUTTON = item.Item(
+    keyword_actions=[("press", "button", _press_button)],
+)
+
 
 EXAMPLE_WORLD = [
     world.Location(
         label="1",
         title="Lab Entrance",
         description="You stand before the entrance to the premier quantum lab.\nDouble doors lead east.",
+        items=[BUTTON],
         exits={world.Direction.EAST: "2"},
     ),
     world.Location(
@@ -64,34 +79,38 @@ def test_parse_commands() -> None:
 
 
 def test_simple_main_loop() -> None:
-    output = io.StringIO()
     c = classes.Analyst("Mensing")
-    loop = main_loop.MainLoop([c], world.World(EXAMPLE_WORLD), output)
+    state = game_state.GameState(party=[c], user_input=["quit"], file=io.StringIO())
+    loop = main_loop.MainLoop(state=state, world=world.World(EXAMPLE_WORLD))
     loop.loop(user_input=["quit"])
     assert (
-        output.getvalue().replace("\t", " ").strip()
+        state.file.getvalue().replace("\t", " ").strip()
         == r"""
 Lab Entrance
 
 You stand before the entrance to the premier quantum lab.
 Double doors lead east.
+
 Exits: east.
 """.strip()
     )
 
 
 def test_do_simple_move() -> None:
-    output = io.StringIO()
     c = classes.Analyst("Mensing")
-    loop = main_loop.MainLoop([c], world.World(EXAMPLE_WORLD), output)
-    loop.loop(user_input=["e", "read sign", "w", "quit"])
+    state = game_state.GameState(
+        party=[c], user_input=["e", "read sign", "w", "quit"], file=io.StringIO()
+    )
+    loop = main_loop.MainLoop(world.World(EXAMPLE_WORLD), state)
+    loop.loop()
     assert (
-        output.getvalue().replace("\t", " ").strip()
+        state.file.getvalue().replace("\t", " ").strip()
         == r"""
 Lab Entrance
 
 You stand before the entrance to the premier quantum lab.
 Double doors lead east.
+
 Exits: east.
 
 Disorganized Lab
@@ -99,6 +118,7 @@ Disorganized Lab
 Tables are here with tons of electronics.
 The lab continues to the south.
 A helpful sign is here.
+
 Exits: south, west.
 
 This is an example world!
@@ -106,6 +126,7 @@ Lab Entrance
 
 You stand before the entrance to the premier quantum lab.
 Double doors lead east.
+
 Exits: east.
 
 
@@ -114,17 +135,20 @@ Exits: east.
 
 
 def test_battle() -> None:
-    output = io.StringIO()
     c = classes.Analyst("Mensing")
-    loop = main_loop.MainLoop([c], world.World(EXAMPLE_WORLD), output)
-    loop.loop(user_input=["e", "south", "s", "1", "1", "quit"])
+    state = game_state.GameState(
+        party=[c], user_input=["e", "south", "s", "1", "1", "quit"], file=io.StringIO()
+    )
+    loop = main_loop.MainLoop(state=state, world=world.World(EXAMPLE_WORLD))
+    loop.loop()
     assert (
-        output.getvalue().replace("\t", " ").strip()
+        state.file.getvalue().replace("\t", " ").strip()
         == r"""
 Lab Entrance
 
 You stand before the entrance to the premier quantum lab.
 Double doors lead east.
+
 Exits: east.
 
 Disorganized Lab
@@ -132,12 +156,14 @@ Disorganized Lab
 Tables are here with tons of electronics.
 The lab continues to the south.
 A helpful sign is here.
+
 Exits: south, west.
 
 Cryostats
 
 Giant aluminum cylinders hang suspended by large frames.
 Rhythmic whirring of a pulse tube can be heard overhead.
+
 Exits: north.
 
 A weird security guard approaches!
@@ -149,23 +175,50 @@ Mensing turn:
 s
 m
 Sample result HealthPoint.HURT
-Observer watcher measures Mensing at qubit Mensing_1
+Observer watcher measures Mensing_1 as HURT.
 Cryostats
 
 Giant aluminum cylinders hang suspended by large frames.
 Rhythmic whirring of a pulse tube can be heard overhead.
+
 Exits: north.
 """.strip()
     )
 
 
+def test_item_function():
+    c = classes.Analyst("michalakis")
+    state = game_state.GameState(
+        party=[c],
+        user_input=["press button", "press button", "press button", "quit"],
+        file=io.StringIO(),
+    )
+    loop = main_loop.MainLoop(world.World(EXAMPLE_WORLD), state)
+    loop.loop()
+    assert (
+        state.file.getvalue().replace("\t", " ").strip()
+        == r"""
+Lab Entrance
+
+You stand before the entrance to the premier quantum lab.
+Double doors lead east.
+
+Exits: east.
+
+You've pressed the button 0 times before!
+You've pressed the button 1 times before!
+You've pressed the button 2 times before!
+""".strip()
+    )
+
+
 def test_title_screen():
-    output = io.StringIO()
-    loop = main_loop.MainLoop([], world.World(EXAMPLE_WORLD), output)
+    state = game_state.GameState(party=[], user_input=[], file=io.StringIO())
+    loop = main_loop.MainLoop(state=state, world=world.World(EXAMPLE_WORLD))
     loop.print_title_screen()
 
     assert (
-        output.getvalue()
+        state.file.getvalue()
         == r"""
 ______  _                _             _____  _           _
 |  ___|(_)              | |           /  ___|| |         | |

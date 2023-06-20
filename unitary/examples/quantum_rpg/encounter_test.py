@@ -15,6 +15,7 @@
 import io
 import unitary.examples.quantum_rpg.battle as battle
 import unitary.examples.quantum_rpg.classes as classes
+import unitary.examples.quantum_rpg.game_state as game_state
 import unitary.examples.quantum_rpg.encounter as encounter
 import unitary.examples.quantum_rpg.npcs as npcs
 
@@ -32,16 +33,18 @@ def test_trigger():
 
 
 def test_encounter():
-    output = io.StringIO()
-    o = npcs.Observer("watcher")
-    e = encounter.Encounter([o], output)
-
     c = classes.Analyst("Aaronson")
-    b = e.initiate([c], output)
-    b.take_player_turn(user_input=["s", "1", "1"])
+    o = npcs.Observer("watcher")
+    state = game_state.GameState(
+        party=[c], user_input=["s", "1", "1"], file=io.StringIO()
+    )
+    e = encounter.Encounter([o])
+
+    b = e.initiate(state)
+    b.take_player_turn()
     b.take_npc_turn()
     assert (
-        output.getvalue().replace("\t", " ").strip()
+        state.file.getvalue().replace("\t", " ").strip()
         == r"""
 -----------------------------------------------
 Aaronson Analyst   watcher Observer
@@ -51,6 +54,6 @@ Aaronson turn:
 s
 m
 Sample result HealthPoint.HURT
-Observer watcher measures Aaronson at qubit Aaronson_1
+Observer watcher measures Aaronson_1 as HURT.
 """.strip()
     )
