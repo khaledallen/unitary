@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unitary.examples.pqpennyflip.pq_penny_flip import GameInterface
+from unitary.examples.pq_penny_flip.pq_penny_flip import GameInterface
